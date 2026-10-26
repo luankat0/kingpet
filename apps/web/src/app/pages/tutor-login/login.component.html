@@ -1,0 +1,75 @@
+<main class="register-page">
+    <section class="register-card">
+        <header class="register-header">
+            <div class="brand">
+                <span class="brand-icon">K</span>
+                <span>King Pet</span>
+            </div>
+
+            <h1>Entrar na sua conta</h1>
+
+            <p>Acesse sua conta para visualizar seus dados no King Pet.</p>
+        </header>
+
+        @if (erro()) {
+            <p-message severity="error" class="status-message" role="alert">
+                {{ erro() }}
+            </p-message>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="entrar()" novalidate>
+            <div class="field">
+                <label for="email">E-mail</label>
+
+                <input
+                    pInputText
+                    id="email"
+                    type="email"
+                    formControlName="email"
+                    placeholder="seuemail@exemplo.com"
+                    autocomplete="email"
+                    [invalid]="campoInvalido('email')"
+                />
+
+                @if (campoInvalido('email')) {
+                    <p-message severity="error" variant="simple" size="small">
+                        Informe um e-mail válido.
+                    </p-message>
+                }
+            </div>
+
+            <div class="field">
+                <label for="senha">Senha</label>
+
+                <p-password
+                    inputId="senha"
+                    formControlName="senha"
+                    [feedback]="false"
+                    [toggleMask]="true"
+                    [fluid]="true"
+                    [invalid]="campoInvalido('senha')"
+                    autocomplete="current-password"
+                />
+
+                @if (campoInvalido('senha')) {
+                    <p-message severity="error" variant="simple" size="small">
+                        Informe sua senha.
+                    </p-message>
+                }
+            </div>
+
+            <p-button
+                type="submit"
+                label="Entrar"
+                [loading]="enviando()"
+                [disabled]="enviando()"
+                [fluid]="true"
+            />
+        </form>
+
+        <p class="account-link">
+            Ainda não possui uma conta?
+            <a routerLink="/cadastro">Cadastre-se</a>
+        </p>
+    </section>
+</main>
