@@ -3,9 +3,12 @@ import 'dotenv/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaClient } from './generated/prisma/client';
 
 /**
+ * Roda pelo código compilado (dist/seed.js), e não via ts-node: o client que o
+ * Prisma gera usa imports internos que só resolvem depois da compilação.
+ *
  * Deixa o sistema usável na primeira execução:
  * - a conta de acesso da equipe (sem ela não há como entrar na tela);
  * - o catálogo de serviços do petshop.

@@ -21,7 +21,7 @@
         "db:generate": "prisma generate",
         "db:migrate": "prisma migrate dev",
         "db:deploy": "prisma migrate deploy",
-        "db:seed": "ts-node -P tsconfig.json prisma/seed.ts",
+        "db:seed": "nest build && node dist/seed.js",
         "db:reset": "prisma migrate reset"
     },
     "dependencies": {

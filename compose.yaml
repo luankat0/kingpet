@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:17-alpine
-    container_name: petshop-db
     restart: unless-stopped
 
     environment:
@@ -26,7 +25,6 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: petshop-api
     restart: unless-stopped
 
     # Só sobe depois que o Postgres responde ao pg_isready.
