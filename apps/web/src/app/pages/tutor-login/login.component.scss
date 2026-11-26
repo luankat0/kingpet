@@ -59,13 +59,6 @@
 .login-card h1 {
     margin-bottom: 0.5rem;
 }
-.demo {
-    border-top: 1px solid var(--line);
-    padding-top: 1rem;
-    color: var(--muted);
-    font-size: 0.85rem;
-    line-height: 1.7;
-}
 @media (max-width: 700px) {
     .login {
         display: flex;

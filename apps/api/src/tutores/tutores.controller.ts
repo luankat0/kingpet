@@ -1,6 +1,22 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    ParseUUIDPipe,
+    Patch,
+    Post,
+    UseGuards,
+} from '@nestjs/common';
+import {
+    ApiBadRequestResponse,
     ApiBearerAuth,
+    ApiConflictResponse,
+    ApiCreatedResponse,
+    ApiNoContentResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
@@ -9,10 +25,9 @@ import {
 } from '@nestjs/swagger';
 
 import { AuthGuard } from '../auth/auth.guard';
-import { UsuarioAtual } from '../auth/decorators/usuario-atual.decorator';
 
 import { TutoresService } from './tutores.service';
-import { AtualizarTutorDto } from './dto/atualizar-tutor.dto';
+import { AtualizarTutorDto, CriarTutorDto } from './dto/salvar-tutor.dto';
 
 @ApiTags('Tutores')
 @ApiBearerAuth()
@@ -22,19 +37,44 @@ import { AtualizarTutorDto } from './dto/atualizar-tutor.dto';
 export class TutoresController {
     constructor(private readonly tutoresService: TutoresService) {}
 
-    @Get('me')
-    @ApiOperation({ summary: 'Consultar o perfil do tutor autenticado' })
-    @ApiOkResponse({ description: 'Perfil do tutor' })
-    @ApiNotFoundResponse({ description: 'Tutor não encontrado' })
-    perfil(@UsuarioAtual() usuarioId: string) {
-        return this.tutoresService.perfil(usuarioId);
+    @Get()
+    @ApiOperation({ summary: 'Listar tutores' })
+    @ApiOkResponse({ description: 'Lista de tutores' })
+    listar() {
+        return this.tutoresService.listar();
     }
 
-    @Patch('me')
-    @ApiOperation({ summary: 'Atualizar o perfil do tutor autenticado' })
-    @ApiOkResponse({ description: 'Perfil atualizado' })
+    @Get(':id')
+    @ApiOperation({ summary: 'Consultar um tutor' })
+    @ApiOkResponse({ description: 'Dados do tutor' })
     @ApiNotFoundResponse({ description: 'Tutor não encontrado' })
-    atualizar(@UsuarioAtual() usuarioId: string, @Body() dto: AtualizarTutorDto) {
-        return this.tutoresService.atualizarPerfil(usuarioId, dto);
+    buscar(@Param('id', ParseUUIDPipe) id: string) {
+        return this.tutoresService.buscarPorId(id);
+    }
+
+    @Post()
+    @ApiOperation({ summary: 'Cadastrar tutor' })
+    @ApiCreatedResponse({ description: 'Tutor cadastrado' })
+    @ApiBadRequestResponse({ description: 'Dados inválidos' })
+    criar(@Body() dto: CriarTutorDto) {
+        return this.tutoresService.criar(dto);
+    }
+
+    @Patch(':id')
+    @ApiOperation({ summary: 'Atualizar tutor' })
+    @ApiOkResponse({ description: 'Tutor atualizado' })
+    @ApiNotFoundResponse({ description: 'Tutor não encontrado' })
+    atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarTutorDto) {
+        return this.tutoresService.atualizar(id, dto);
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Excluir tutor' })
+    @ApiNoContentResponse({ description: 'Tutor excluído' })
+    @ApiNotFoundResponse({ description: 'Tutor não encontrado' })
+    @ApiConflictResponse({ description: 'Tutor com pets ou agendamentos vinculados' })
+    remover(@Param('id', ParseUUIDPipe) id: string) {
+        return this.tutoresService.remover(id);
     }
 }

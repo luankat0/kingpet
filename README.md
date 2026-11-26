@@ -31,11 +31,21 @@ Isso sobe:
 | `db`    | `localhost:5432`        | PostgreSQL com os dados em um volume       |
 | `api`   | `localhost:3000`        | API; aplica as migrations sozinha ao subir |
 
-Popule o catálogo de serviços (uma vez):
+Crie a conta de acesso e o catálogo de serviços (uma vez):
 
 ```powershell
 docker compose exec api npm run db:seed
 ```
+
+O seed cria **uma** conta para entrar no sistema:
+
+| E-mail                | Senha         |
+| --------------------- | ------------- |
+| `equipe@kingpet.test` | `KingPet2026` |
+
+Troque essa senha antes de usar fora da sua máquina (o seed aceita
+`SEED_USUARIO_EMAIL` e `SEED_USUARIO_SENHA`). O seed **não** cria tutores,
+pets nem agendamentos: esses você cadastra pelas telas.
 
 Confira se está no ar:
 
@@ -55,7 +65,10 @@ npm install
 npm run dev:web
 ```
 
-O site abre em <http://localhost:4200>.
+O site abre em <http://localhost:4200>. Ele conversa com a API pelo caminho
+`/api`, que o servidor de desenvolvimento do Angular encaminha para
+`localhost:3000` (veja `apps/web/proxy.conf.json`) — por isso a API precisa
+estar de pé antes de você usar as telas.
 
 ### Comandos do dia a dia no Docker
 
@@ -101,7 +114,7 @@ Copy-Item apps/api/.env.example apps/api/.env
 
 Abra `apps/api/.env` e preencha `JWT_SECRET` com qualquer texto secreto.
 
-4. Gere o Prisma Client, aplique as migrations e popule os serviços:
+4. Gere o Prisma Client, aplique as migrations e crie a conta inicial:
 
 ```powershell
 npm run db:generate -w api
@@ -170,14 +183,15 @@ $env:JWT_SECRET = "um-segredo-bem-grande"; docker compose up -d
 O detalhamento está em [apps/api/README.md](apps/api/README.md) e no Swagger
 (<http://localhost:3000/docs>). Em resumo:
 
-| Prefixo         | O que cobre                                        |
-| --------------- | -------------------------------------------------- |
-| `/auth`         | Cadastro, login e dados do usuário logado          |
-| `/tutores`      | Perfil do tutor autenticado                        |
-| `/pets`         | CRUD dos pets do tutor                             |
-| `/servicos`     | Catálogo do petshop (leitura pública)              |
-| `/agendamentos` | Agendar, remarcar, cancelar e concluir atendimentos |
-| `/health`       | Status da API e do banco                           |
+| Prefixo         | O que cobre                                      |
+| --------------- | ------------------------------------------------ |
+| `/auth`         | Login da equipe e dados do usuário da sessão     |
+| `/tutores`      | Cadastro de clientes do petshop                  |
+| `/pets`         | Pets de cada tutor                               |
+| `/servicos`     | Serviços oferecidos e preços                     |
+| `/produtos`     | Produtos e estoque                               |
+| `/agendamentos` | Atendimentos: data, pet, serviço e situação      |
+| `/health`       | Status da API e do banco                         |
 
 ## Organização do trabalho
 
@@ -193,9 +207,14 @@ O detalhamento está em [apps/api/README.md](apps/api/README.md) e no Swagger
 Já existe um Postgres ou uma API rodando na máquina. Pare o serviço local ou
 troque a porta publicada no `compose.yaml`.
 
-**A API sobe mas o front mostra "Não foi possível conectar à API"**
-Confira se o container está de pé (`docker compose ps`) e se o front está em
-`http://localhost:4200` — é a origem liberada no CORS por padrão.
+**O front mostra "Não foi possível conectar à API"**
+Confira se a API está de pé (`docker compose ps` ou `curl http://localhost:3000/health`).
+O front chama `/api` e o proxy do Angular repassa para `localhost:3000`; se você
+mudou a porta da API, ajuste `apps/web/proxy.conf.json`.
+
+**A tela de login recusa o acesso**
+Rode o seed (`npm run db:seed -w api` ou `docker compose exec api npm run db:seed`):
+sem ele não existe nenhuma conta cadastrada.
 
 **`npm install` falha no `bcrypt` no Windows**
 O `bcrypt` compila código nativo e não gosta de caminhos com acento nem de

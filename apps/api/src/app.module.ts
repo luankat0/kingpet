@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { TutoresModule } from './tutores/tutores.module';
 import { PetsModule } from './pets/pets.module';
 import { ServicosModule } from './servicos/servicos.module';
+import { ProdutosModule } from './produtos/produtos.module';
 import { AgendamentosModule } from './agendamentos/agendamentos.module';
 
 @Module({
@@ -21,6 +22,7 @@ import { AgendamentosModule } from './agendamentos/agendamentos.module';
         TutoresModule,
         PetsModule,
         ServicosModule,
+        ProdutosModule,
         AgendamentosModule,
     ],
     controllers: [AppController],

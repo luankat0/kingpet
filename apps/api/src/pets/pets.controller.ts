@@ -9,26 +9,27 @@ import {
     ParseUUIDPipe,
     Patch,
     Post,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 import {
     ApiBadRequestResponse,
     ApiBearerAuth,
+    ApiConflictResponse,
     ApiCreatedResponse,
     ApiNoContentResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
+    ApiQuery,
     ApiTags,
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { AuthGuard } from '../auth/auth.guard';
-import { UsuarioAtual } from '../auth/decorators/usuario-atual.decorator';
 
 import { PetsService } from './pets.service';
-import { CriarPetDto } from './dto/criar-pet.dto';
-import { AtualizarPetDto } from './dto/atualizar-pet.dto';
+import { AtualizarPetDto, CriarPetDto } from './dto/salvar-pet.dto';
 
 @ApiTags('Pets')
 @ApiBearerAuth()
@@ -38,47 +39,51 @@ import { AtualizarPetDto } from './dto/atualizar-pet.dto';
 export class PetsController {
     constructor(private readonly petsService: PetsService) {}
 
-    @Post()
-    @ApiOperation({ summary: 'Cadastrar um pet para o tutor autenticado' })
-    @ApiCreatedResponse({ description: 'Pet cadastrado' })
-    @ApiBadRequestResponse({ description: 'Dados inválidos' })
-    criar(@UsuarioAtual() usuarioId: string, @Body() dto: CriarPetDto) {
-        return this.petsService.criar(usuarioId, dto);
-    }
-
     @Get()
-    @ApiOperation({ summary: 'Listar os pets do tutor autenticado' })
+    @ApiOperation({ summary: 'Listar pets' })
+    @ApiQuery({
+        name: 'tutorId',
+        required: false,
+        description: 'Filtra os pets de um tutor',
+    })
     @ApiOkResponse({ description: 'Lista de pets' })
-    listar(@UsuarioAtual() usuarioId: string) {
-        return this.petsService.listar(usuarioId);
+    listar(@Query('tutorId', new ParseUUIDPipe({ optional: true })) tutorId?: string) {
+        return this.petsService.listar(tutorId);
     }
 
     @Get(':id')
-    @ApiOperation({ summary: 'Consultar um pet do tutor autenticado' })
+    @ApiOperation({ summary: 'Consultar um pet' })
     @ApiOkResponse({ description: 'Dados do pet' })
     @ApiNotFoundResponse({ description: 'Pet não encontrado' })
-    buscar(@UsuarioAtual() usuarioId: string, @Param('id', ParseUUIDPipe) id: string) {
-        return this.petsService.buscarPorId(usuarioId, id);
+    buscar(@Param('id', ParseUUIDPipe) id: string) {
+        return this.petsService.buscarPorId(id);
+    }
+
+    @Post()
+    @ApiOperation({ summary: 'Cadastrar pet' })
+    @ApiCreatedResponse({ description: 'Pet cadastrado' })
+    @ApiBadRequestResponse({ description: 'Dados inválidos' })
+    @ApiNotFoundResponse({ description: 'Tutor não encontrado' })
+    criar(@Body() dto: CriarPetDto) {
+        return this.petsService.criar(dto);
     }
 
     @Patch(':id')
-    @ApiOperation({ summary: 'Atualizar um pet do tutor autenticado' })
+    @ApiOperation({ summary: 'Atualizar pet' })
     @ApiOkResponse({ description: 'Pet atualizado' })
-    @ApiNotFoundResponse({ description: 'Pet não encontrado' })
-    atualizar(
-        @UsuarioAtual() usuarioId: string,
-        @Param('id', ParseUUIDPipe) id: string,
-        @Body() dto: AtualizarPetDto,
-    ) {
-        return this.petsService.atualizar(usuarioId, id, dto);
+    @ApiNotFoundResponse({ description: 'Pet ou tutor não encontrado' })
+    @ApiConflictResponse({ description: 'Troca de tutor com agendamentos vinculados' })
+    atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarPetDto) {
+        return this.petsService.atualizar(id, dto);
     }
 
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiOperation({ summary: 'Excluir um pet do tutor autenticado' })
+    @ApiOperation({ summary: 'Excluir pet' })
     @ApiNoContentResponse({ description: 'Pet excluído' })
     @ApiNotFoundResponse({ description: 'Pet não encontrado' })
-    remover(@UsuarioAtual() usuarioId: string, @Param('id', ParseUUIDPipe) id: string) {
-        return this.petsService.remover(usuarioId, id);
+    @ApiConflictResponse({ description: 'Pet com agendamentos vinculados' })
+    remover(@Param('id', ParseUUIDPipe) id: string) {
+        return this.petsService.remover(id);
     }
 }

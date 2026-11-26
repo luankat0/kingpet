@@ -1,18 +1,20 @@
 <kp-cabecalho titulo="Meu perfil" descricao="Identificação da sessão atual." />
 <section class="painel ficha">
-    <div class="identidade">
-        <span class="avatar grande">AM</span>
-        <div>
-            <h2>{{ authService.usuario.nome }}</h2>
-            <p>{{ authService.usuario.funcao }}</p>
+    @if (usuario(); as conta) {
+        <div class="identidade">
+            <span class="avatar grande">{{ iniciais() }}</span>
+            <div>
+                <h2>{{ conta.nome }}</h2>
+                <p>{{ conta.funcao }}</p>
+            </div>
         </div>
-    </div>
-    <dl>
-        <dt>E-mail</dt>
-        <dd>{{ authService.usuario.email }}</dd>
-        <dt>Tipo de acesso</dt>
-        <dd>Sessão demonstrativa local</dd>
-    </dl>
+        <dl>
+            <dt>E-mail</dt>
+            <dd>{{ conta.email }}</dd>
+            <dt>Tipo de acesso</dt>
+            <dd>Sessão autenticada pela API do KingPet</dd>
+        </dl>
+    }
     <p-button
         label="Sair da conta" ariaLabel="Sair da conta"
         severity="secondary"

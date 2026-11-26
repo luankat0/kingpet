@@ -1,68 +1,81 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
-import { AtualizarTutorDto } from './dto/atualizar-tutor.dto';
+import { AtualizarTutorDto, CriarTutorDto } from './dto/salvar-tutor.dto';
 
 const SELECT_TUTOR = {
     id: true,
     nome: true,
+    contato: true,
     telefone: true,
     endereco: true,
-    criadoEm: true,
-    atualizadoEm: true,
 } as const;
 
 @Injectable()
 export class TutoresService {
     constructor(private readonly prisma: PrismaService) {}
 
-    /**
-     * Resolve o tutor dono da requisição a partir do usuário autenticado.
-     * Os outros módulos usam esse id para garantir que ninguém veja dado de outro tutor.
-     */
-    async obterIdPorUsuario(usuarioId: string): Promise<string> {
-        const tutor = await this.prisma.tutor.findUnique({
-            where: { usuarioId },
-            select: { id: true },
+    listar() {
+        return this.prisma.tutor.findMany({
+            orderBy: { nome: 'asc' },
+            select: SELECT_TUTOR,
         });
-
-        if (!tutor) {
-            throw new NotFoundException('Tutor não encontrado para este usuário');
-        }
-
-        return tutor.id;
     }
 
-    async perfil(usuarioId: string) {
+    async buscarPorId(id: string) {
         const tutor = await this.prisma.tutor.findUnique({
-            where: { usuarioId },
-            select: {
-                ...SELECT_TUTOR,
-                usuario: {
-                    select: { id: true, email: true },
-                },
-            },
+            where: { id },
+            select: SELECT_TUTOR,
         });
 
         if (!tutor) {
-            throw new NotFoundException('Tutor não encontrado para este usuário');
+            throw new NotFoundException('Tutor não encontrado');
         }
 
         return tutor;
     }
 
-    async atualizarPerfil(usuarioId: string, dto: AtualizarTutorDto) {
-        const tutorId = await this.obterIdPorUsuario(usuarioId);
-
-        return this.prisma.tutor.update({
-            where: { id: tutorId },
+    criar(dto: CriarTutorDto) {
+        return this.prisma.tutor.create({
             data: {
                 nome: dto.nome,
+                contato: dto.contato,
                 telefone: dto.telefone,
                 endereco: dto.endereco,
             },
             select: SELECT_TUTOR,
         });
+    }
+
+    async atualizar(id: string, dto: AtualizarTutorDto) {
+        await this.buscarPorId(id);
+
+        return this.prisma.tutor.update({
+            where: { id },
+            data: {
+                nome: dto.nome,
+                contato: dto.contato,
+                telefone: dto.telefone,
+                endereco: dto.endereco,
+            },
+            select: SELECT_TUTOR,
+        });
+    }
+
+    async remover(id: string) {
+        await this.buscarPorId(id);
+
+        // Mesma regra que a tela aplicava localmente, agora garantida no servidor.
+        const [pets, agendamentos] = await Promise.all([
+            this.prisma.pet.count({ where: { tutorId: id } }),
+            this.prisma.agendamento.count({ where: { tutorId: id } }),
+        ]);
+
+        if (pets > 0 || agendamentos > 0) {
+            throw new ConflictException('Este tutor possui pets ou agendamentos vinculados.');
+        }
+
+        await this.prisma.tutor.delete({ where: { id } });
     }
 }

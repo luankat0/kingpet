@@ -13,6 +13,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
+/** Formato esperado pelo front (core/models.ts → Usuario). */
+const SELECT_USUARIO = {
+    id: true,
+    nome: true,
+    email: true,
+    funcao: true,
+} as const;
+
 @Injectable()
 export class AuthService {
     constructor(
@@ -20,7 +28,7 @@ export class AuthService {
         private readonly jwtService: JwtService,
     ) {}
 
-    // Função para registrar novos USUÁRIOS - Luan Kato
+    // Cria a conta de acesso de quem trabalha no petshop.
     async register(dto: RegisterDto) {
         if (Buffer.byteLength(dto.senha, 'utf-8') > 72) {
             throw new BadRequestException('A senha deve ter no máximo 72 bytes');
@@ -29,34 +37,16 @@ export class AuthService {
         const senhaHash = await bcrypt.hash(dto.senha, 12);
 
         try {
-            const usuario = await this.prisma.usuario.create({
+            return await this.prisma.usuario.create({
                 data: {
+                    nome: dto.nome,
                     email: dto.email,
+                    funcao: dto.funcao,
                     senhaHash,
-                    tutor: {
-                        create: {
-                            nome: dto.nome,
-                            telefone: dto.telefone,
-                            endereco: dto.endereco,
-                        },
-                    },
                 },
-                select: {
-                    id: true,
-                    email: true,
-                    tutor: {
-                        select: {
-                            id: true,
-                            nome: true,
-                            telefone: true,
-                            endereco: true,
-                        },
-                    },
-                },
+                select: SELECT_USUARIO,
             });
-
-            return usuario;
-            // Validação de Email já existente para não criar conflito.
+            // Validação de e-mail já existente para não criar conflito.
         } catch (error: unknown) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 throw new ConflictException('Este e-mail já está cadastrado');
@@ -66,51 +56,41 @@ export class AuthService {
         }
     }
 
-    // Função para fazer login de usuários já existentes - Luan Kato
     async login(dto: LoginDto) {
         const usuario = await this.prisma.usuario.findUnique({
             where: { email: dto.email },
         });
 
-        // Validações caso usuário tenha digitado senha ou email errados
-        // Não existentes ou não correspondentes
+        // Mesma mensagem nos dois casos: não revela se o e-mail existe.
         if (!usuario) {
-            throw new UnauthorizedException('E-mail ou senha inválidos');
+            throw new UnauthorizedException('E-mail ou senha incorretos');
         }
 
         const senhaValida = await bcrypt.compare(dto.senha, usuario.senhaHash);
 
         if (!senhaValida) {
-            throw new UnauthorizedException('E-mail ou senha inválidos');
+            throw new UnauthorizedException('E-mail ou senha incorretos');
         }
 
-        const access_token = await this.jwtService.signAsync({
-            sub: usuario.id,
-        });
+        const access_token = await this.jwtService.signAsync({ sub: usuario.id });
 
         return {
             access_token,
             token_type: 'Bearer',
             expires_in: 3600, // 1 Hora
+            usuario: {
+                id: usuario.id,
+                nome: usuario.nome,
+                email: usuario.email,
+                funcao: usuario.funcao,
+            },
         };
     }
 
-    // Função para encontrar/identificar usuários - Luan Kato
     async me(usuarioId: string) {
         const usuario = await this.prisma.usuario.findUnique({
             where: { id: usuarioId },
-            select: {
-                id: true,
-                email: true,
-                tutor: {
-                    select: {
-                        id: true,
-                        nome: true,
-                        telefone: true,
-                        endereco: true,
-                    },
-                },
-            },
+            select: SELECT_USUARIO,
         });
 
         if (!usuario) {

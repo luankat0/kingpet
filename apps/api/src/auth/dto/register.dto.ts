@@ -1,25 +1,19 @@
 import { Transform } from 'class-transformer';
-import {
-    IsEmail,
-    IsNotEmpty,
-    IsOptional,
-    IsString,
-    Matches,
-    MaxLength,
-    MinLength,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+const limpar = ({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value;
+
 export class RegisterDto {
-    @ApiProperty({ example: 'Maria Silva' })
-    @Transform(({ value }: { value: unknown }) =>
-        typeof value === 'string' ? value.trim() : value,
-    )
+    @ApiProperty({ example: 'Alex Martins' })
+    @Transform(limpar)
     @IsString()
     @IsNotEmpty()
+    @MaxLength(120)
     nome!: string;
 
-    @ApiProperty({ example: 'maria@email.com' })
+    @ApiProperty({ example: 'equipe@kingpet.test' })
     @Transform(({ value }: { value: unknown }) =>
         typeof value === 'string' ? value.trim().toLowerCase() : value,
     )
@@ -27,35 +21,17 @@ export class RegisterDto {
     @MaxLength(254)
     email!: string;
 
-    @ApiProperty({
-        example: '(81) 99999-9999',
-        description: 'Telefone brasileiro com DDD',
-    })
-    @Transform(({ value }: { value: unknown }) =>
-        typeof value === 'string' ? value.replace(/\D/g, '') : value,
-    )
-    @IsString()
-    @Matches(/^\d{10,11}$/, {
-        message: 'Informe um telefone com DDD válido',
-    })
-    telefone!: string;
-
-    @ApiPropertyOptional({
-        example: 'Rua das Flores, 123 - Recife/PE',
-    })
+    @ApiPropertyOptional({ example: 'Administração', default: 'Atendimento' })
     @IsOptional()
+    @Transform(limpar)
     @IsString()
-    @MaxLength(255)
-    endereco?: string;
+    @IsNotEmpty()
+    @MaxLength(60)
+    funcao?: string;
 
-    @ApiProperty({
-        example: 'MinhaSenha@2026',
-        minLength: 12,
-        maxLength: 72,
-        writeOnly: true,
-    })
+    @ApiProperty({ example: 'KingPet2026', minLength: 8, maxLength: 72, writeOnly: true })
     @IsString()
-    @MinLength(12)
+    @MinLength(8)
     @MaxLength(72)
     senha!: string;
 }

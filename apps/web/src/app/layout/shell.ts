@@ -17,6 +17,7 @@ import { REPOSITORIO } from '../core/repository';
 import { catalogo } from '../shared/catalogo';
 import { Marca } from '../shared/marca';
 import { Tipo } from '../core/models';
+import { iniciaisDe } from '../core/iniciais';
 
 @Component({
     imports: [
@@ -42,6 +43,8 @@ export class Shell {
     readonly tema = inject(Tema);
     readonly router = inject(Router);
     readonly recolhido = signal(false);
+    readonly nomeUsuario = computed(() => this.auth.usuario()?.nome ?? 'Minha conta');
+    readonly iniciais = computed(() => iniciaisDe(this.nomeUsuario()));
     mobile = false;
     readonly grupos = [
         {

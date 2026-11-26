@@ -3,11 +3,12 @@ import {
     Controller,
     Delete,
     Get,
+    HttpCode,
+    HttpStatus,
     Param,
     ParseUUIDPipe,
     Patch,
     Post,
-    Query,
     UseGuards,
 } from '@nestjs/common';
 import {
@@ -15,32 +16,32 @@ import {
     ApiBearerAuth,
     ApiConflictResponse,
     ApiCreatedResponse,
+    ApiNoContentResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
     ApiTags,
+    ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { AuthGuard } from '../auth/auth.guard';
 
 import { ServicosService } from './servicos.service';
-import { CriarServicoDto } from './dto/criar-servico.dto';
-import { AtualizarServicoDto } from './dto/atualizar-servico.dto';
-import { ListarServicosDto } from './dto/listar-servicos.dto';
+import { AtualizarServicoDto, CriarServicoDto } from './dto/salvar-servico.dto';
 
 @ApiTags('Serviços')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado' })
+@UseGuards(AuthGuard)
 @Controller('servicos')
 export class ServicosController {
     constructor(private readonly servicosService: ServicosService) {}
 
     @Get()
-    @ApiOperation({
-        summary: 'Listar serviços do petshop',
-        description: 'Rota pública: o catálogo aparece antes do login.',
-    })
+    @ApiOperation({ summary: 'Listar serviços' })
     @ApiOkResponse({ description: 'Lista de serviços' })
-    listar(@Query() filtro: ListarServicosDto) {
-        return this.servicosService.listar(filtro);
+    listar() {
+        return this.servicosService.listar();
     }
 
     @Get(':id')
@@ -52,9 +53,7 @@ export class ServicosController {
     }
 
     @Post()
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth()
-    @ApiOperation({ summary: 'Cadastrar um serviço' })
+    @ApiOperation({ summary: 'Cadastrar serviço' })
     @ApiCreatedResponse({ description: 'Serviço cadastrado' })
     @ApiBadRequestResponse({ description: 'Dados inválidos' })
     @ApiConflictResponse({ description: 'Já existe um serviço com este nome' })
@@ -63,25 +62,21 @@ export class ServicosController {
     }
 
     @Patch(':id')
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth()
-    @ApiOperation({ summary: 'Atualizar um serviço' })
+    @ApiOperation({ summary: 'Atualizar serviço' })
     @ApiOkResponse({ description: 'Serviço atualizado' })
     @ApiNotFoundResponse({ description: 'Serviço não encontrado' })
+    @ApiConflictResponse({ description: 'Já existe um serviço com este nome' })
     atualizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AtualizarServicoDto) {
         return this.servicosService.atualizar(id, dto);
     }
 
     @Delete(':id')
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth()
-    @ApiOperation({
-        summary: 'Desativar um serviço',
-        description: 'O serviço sai do catálogo, mas o histórico de agendamentos é preservado.',
-    })
-    @ApiOkResponse({ description: 'Serviço desativado' })
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Excluir serviço' })
+    @ApiNoContentResponse({ description: 'Serviço excluído' })
     @ApiNotFoundResponse({ description: 'Serviço não encontrado' })
-    desativar(@Param('id', ParseUUIDPipe) id: string) {
-        return this.servicosService.desativar(id);
+    @ApiConflictResponse({ description: 'Serviço com agendamentos vinculados' })
+    remover(@Param('id', ParseUUIDPipe) id: string) {
+        return this.servicosService.remover(id);
     }
 }
