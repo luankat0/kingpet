@@ -90,6 +90,28 @@ Para apagar também o banco (zera tudo):
 docker compose down -v
 ```
 
+## Já tem PostgreSQL instalado na máquina?
+
+Se você já tem um Postgres nativo rodando (o instalador do Windows, por
+exemplo), pode usar ele e não subir o container do banco. Crie o usuário e o
+banco **uma vez**, com o seu superusuário do Postgres:
+
+```powershell
+psql -U postgres -c "CREATE USER petshop WITH PASSWORD 'petshop_dev';"
+```
+
+```powershell
+psql -U postgres -c "CREATE DATABASE petshop OWNER petshop;"
+```
+
+Depois siga o **Jeito alternativo** abaixo, pulando o
+`docker compose up -d db`: o `DATABASE_URL` do `.env.example` já aponta para
+`localhost:5432`. Assim você não precisa de Docker para nada.
+
+Nesse caso **não** suba o container `db` junto, senão os dois disputam a porta
+5432 — ou publique o container em outra porta com `DB_PORT` (veja Problemas
+comuns).
+
 ## Jeito alternativo: só o banco no Docker, API e front na máquina
 
 Útil para desenvolver no back end com hot reload.
@@ -204,8 +226,15 @@ O detalhamento está em [apps/api/README.md](apps/api/README.md) e no Swagger
 ## Problemas comuns
 
 **`docker compose up` reclama que a porta 5432 ou 3000 está em uso**
-Já existe um Postgres ou uma API rodando na máquina. Pare o serviço local ou
-troque a porta publicada no `compose.yaml`.
+Já existe um Postgres ou um servidor Node rodando na máquina. Duas saídas:
+pare o serviço local, ou publique o container em outra porta:
+
+```powershell
+$env:DB_PORT = "5433"; $env:API_PORT = "3001"; docker compose up -d
+```
+
+Se mudar a `API_PORT`, ajuste também o `target` em `apps/web/proxy.conf.json`.
+Para descobrir quem está na porta: `Get-NetTCPConnection -LocalPort 5432`.
 
 **O front mostra "Não foi possível conectar à API"**
 Confira se a API está de pé (`docker compose ps` ou `curl http://localhost:3000/health`).

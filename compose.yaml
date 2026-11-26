@@ -9,8 +9,9 @@ services:
       POSTGRES_PASSWORD: petshop_dev
       POSTGRES_DB: petshop
 
+    # Porta publicada no host: mude com DB_PORT se já houver um Postgres local.
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -41,8 +42,9 @@ services:
       # Origem liberada no CORS (o ng serve roda em 4200).
       WEB_ORIGIN: "${WEB_ORIGIN:-http://localhost:4200}"
 
+    # Porta publicada no host: mude com API_PORT se a 3000 estiver ocupada.
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${API_PORT:-3000}:3000"
 
     healthcheck:
       test:
