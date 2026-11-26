@@ -1,8 +1,18 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, InjectionToken, Signal, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ambiente } from './config';
-import { Dados, Entidades, Tipo } from './models';
-import { demonstracao } from './seed';
-import { conferirDados, validar } from './validation';
+import {
+    Agendamento,
+    Dados,
+    Entidades,
+    Pet,
+    Produto,
+    Servico,
+    Tipo,
+    Tutor,
+} from './models';
+import { conferirDados } from './validation';
 
 export interface Repositorio {
     dados: Signal<Dados>;
@@ -14,102 +24,79 @@ export interface Repositorio {
 }
 const vazio: Dados = { tutores: [], pets: [], servicos: [], produtos: [], agendamentos: [] };
 
+/** Transforma o erro HTTP na mensagem que a tela mostra ao usuário. */
+function mensagem(e: unknown, padrao: string) {
+    if (e instanceof HttpErrorResponse) {
+        if (e.status === 0) return 'Não foi possível conectar à API.';
+        const corpo = e.error as { message?: string | string[] } | null;
+        const detalhe = Array.isArray(corpo?.message) ? corpo?.message[0] : corpo?.message;
+        if (detalhe) return detalhe;
+    }
+    return e instanceof Error ? e.message : padrao;
+}
+
 @Injectable({ providedIn: 'root' })
-export class RepositorioLocal implements Repositorio {
+export class RepositorioApi implements Repositorio {
+    private readonly http = inject(HttpClient);
     private readonly estado = signal<Dados>(vazio);
     readonly dados = this.estado.asReadonly();
     readonly carregando = signal(true);
     readonly erro = signal('');
     constructor() {
         void this.carregar();
-        window.addEventListener('storage', (e) => {
-            if (e.key === ambiente.dados || !e.key) void this.carregar();
-        });
     }
-    private ler(): Dados {
-        const raw = localStorage.getItem(ambiente.dados);
-        if (raw === null) {
-            const inicial = demonstracao();
-            localStorage.setItem(ambiente.dados, JSON.stringify(inicial));
-            return inicial;
-        }
-        const value: unknown = JSON.parse(raw);
-        conferirDados(value);
-        return value;
+    private url(tipo: Tipo, id?: string) {
+        return ambiente.apiBase + '/' + tipo + (id ? '/' + id : '');
     }
-    private async exclusivo<T>(acao: () => T): Promise<T> {
-        return navigator.locks ? navigator.locks.request(ambiente.dados, acao) : acao();
+    private buscar<T>(tipo: Tipo) {
+        return firstValueFrom(this.http.get<T[]>(this.url(tipo)));
     }
     async carregar() {
         this.carregando.set(true);
         try {
-            this.estado.set(await this.exclusivo(() => this.ler()));
+            // Uma chamada por coleção, todas em paralelo.
+            const [tutores, pets, servicos, produtos, agendamentos] = await Promise.all([
+                this.buscar<Tutor>('tutores'),
+                this.buscar<Pet>('pets'),
+                this.buscar<Servico>('servicos'),
+                this.buscar<Produto>('produtos'),
+                this.buscar<Agendamento>('agendamentos'),
+            ]);
+            const db: Dados = { tutores, pets, servicos, produtos, agendamentos };
+            conferirDados(db);
+            this.estado.set(db);
             this.erro.set('');
-        } catch {
-            this.erro.set(
-                'Não foi possível ler os dados locais. Confira o armazenamento do navegador e as instruções de recuperação no README.',
-            );
+        } catch (e) {
+            this.erro.set(mensagem(e, 'Não foi possível carregar os dados da API.'));
         } finally {
             this.carregando.set(false);
         }
     }
-    private async alterar<T>(acao: (db: Dados) => T): Promise<T> {
-        return this.exclusivo(() => {
-            const db = this.ler();
-            const result = acao(db);
-            conferirDados(db);
-            try {
-                localStorage.setItem(ambiente.dados, JSON.stringify(db));
-            } catch {
-                throw Error('Falha ao gravar no navegador. Verifique o espaço e as permissões.');
-            }
-            this.estado.set(db);
-            return result;
-        });
-    }
     async salvar<K extends Tipo>(tipo: K, valor: Omit<Entidades[K], 'id'>, id?: string) {
-        return this.alterar((db) => {
-            const rows: Entidades[K][] = db[tipo];
-            const index = rows.findIndex((r) => r.id === id);
-            if (id && index < 0) throw Error('Este registro já foi excluído.');
-            const row = { ...valor, id: id ?? crypto.randomUUID() } as Entidades[K];
-            validar(tipo, row, db);
-            if (
-                tipo === 'pets' &&
-                'tutorId' in row &&
-                db.agendamentos.some((a) => a.petId === id && a.tutorId !== row.tutorId)
-            )
-                throw Error(
-                    'O pet possui agendamentos vinculados. Mantenha o tutor desses registros.',
-                );
-            if (id) rows[index] = row;
-            else rows.push(row);
-            return row.id;
-        });
+        let salvo: Entidades[K];
+        try {
+            salvo = await firstValueFrom(
+                id
+                    ? this.http.patch<Entidades[K]>(this.url(tipo, id), valor)
+                    : this.http.post<Entidades[K]>(this.url(tipo), valor),
+            );
+        } catch (e) {
+            throw Error(mensagem(e, 'Não foi possível salvar o registro.'));
+        }
+        // Recarrega para a tela refletir o que o servidor realmente gravou.
+        await this.carregar();
+        return salvo.id;
     }
     async excluir(tipo: Tipo, id: string) {
-        await this.alterar((db) => {
-            if (
-                tipo === 'tutores' &&
-                (db.pets.some((p) => p.tutorId === id) ||
-                    db.agendamentos.some((a) => a.tutorId === id))
-            )
-                throw Error('Este tutor possui pets ou agendamentos vinculados.');
-            if (
-                db.agendamentos.some(
-                    (a) =>
-                        (tipo === 'pets' && a.petId === id) ||
-                        (tipo === 'servicos' && a.servicoId === id),
-                )
-            )
-                throw Error('Este registro possui agendamentos vinculados.');
-            const index = db[tipo].findIndex((r) => r.id === id);
-            if (index < 0) throw Error('O registro já foi excluído.');
-            db[tipo].splice(index, 1);
-        });
+        try {
+            await firstValueFrom(this.http.delete<void>(this.url(tipo, id)));
+        } catch (e) {
+            throw Error(mensagem(e, 'Não foi possível excluir o registro.'));
+        }
+        await this.carregar();
     }
 }
 export const REPOSITORIO = new InjectionToken<Repositorio>('Repositório KingPet', {
     providedIn: 'root',
-    factory: () => inject(RepositorioLocal),
+    factory: () => inject(RepositorioApi),
 });

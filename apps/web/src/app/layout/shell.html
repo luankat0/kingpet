@@ -62,11 +62,11 @@
                 <button
                     class="conta"
                     (click)="menu.toggle($event)"
-                    aria-label="Menu de Alex Martins"
+                    [attr.aria-label]="'Menu de ' + nomeUsuario()"
                     aria-haspopup="menu"
                 >
-                    <span class="avatar">AM</span>
-                    <span class="conta-nome">{{ auth.usuario.nome }}</span>
+                    <span class="avatar">{{ iniciais() }}</span>
+                    <span class="conta-nome">{{ nomeUsuario() }}</span>
                     <i aria-hidden="true" class="pi pi-angle-down"></i>
                 </button>
                 <p-menu #menu [popup]="true" [model]="usuarioMenu" appendTo="body" />

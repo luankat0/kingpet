@@ -8,18 +8,55 @@ services:
       POSTGRES_USER: petshop
       POSTGRES_PASSWORD: petshop_dev
       POSTGRES_DB: petshop
-    
+
+    # Porta publicada no host: mude com DB_PORT se já houver um Postgres local.
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isalready -U petshop -d -petshop"]
+      test: ["CMD-SHELL", "pg_isready -U petshop -d petshop"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: petshop-api
+    restart: unless-stopped
+
+    # Só sobe depois que o Postgres responde ao pg_isready.
+    depends_on:
+      db:
+        condition: service_healthy
+
+    environment:
+      # "db" é o nome do serviço acima: dentro da rede do compose ele resolve.
+      DATABASE_URL: "postgresql://petshop:petshop_dev@db:5432/petshop?schema=public"
+      JWT_SECRET: "${JWT_SECRET:-kingpet_dev_secret}"
+      PORT: 3000
+      # Origem liberada no CORS (o ng serve roda em 4200).
+      WEB_ORIGIN: "${WEB_ORIGIN:-http://localhost:4200}"
+
+    # Porta publicada no host: mude com API_PORT se a 3000 estiver ocupada.
+    ports:
+      - "127.0.0.1:${API_PORT:-3000}:3000"
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://localhost:3000/health')
+          .then((r) => process.exit(r.ok ? 0 : 1))
+          .catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
 
 volumes:
   postgres_data:

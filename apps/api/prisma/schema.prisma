@@ -8,12 +8,13 @@ datasource db {
   provider = "postgresql"
 }
 
+/// Conta de acesso da equipe do petshop (atendimento, administração).
 model Usuario {
   id        String @id @default(uuid()) @db.Uuid
+  nome      String
   email     String @unique
   senhaHash String @map("senha_hash")
-
-  tutor Tutor?
+  funcao    String @default("Atendimento")
 
   criadoEm     DateTime @default(now()) @map("criado_em")
   atualizadoEm DateTime @updatedAt @map("atualizado_em")
@@ -21,17 +22,92 @@ model Usuario {
   @@map("usuarios")
 }
 
+/// Cliente do petshop: quem traz os pets. Não tem login.
 model Tutor {
-  id       String  @id @default(uuid()) @db.Uuid
+  id       String @id @default(uuid()) @db.Uuid
   nome     String
+  contato  String
   telefone String
-  endereco String?
+  endereco String
 
-  usuarioId String  @unique @map("usuario_id") @db.Uuid
-  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  pets         Pet[]
+  agendamentos Agendamento[]
 
   criadoEm     DateTime @default(now()) @map("criado_em")
   atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
   @@map("tutores")
+}
+
+model Pet {
+  id      String @id @default(uuid()) @db.Uuid
+  nome    String
+  especie String
+  raca    String
+  sexo    String
+
+  tutorId String @map("tutor_id") @db.Uuid
+  tutor   Tutor  @relation(fields: [tutorId], references: [id], onDelete: Restrict)
+
+  agendamentos Agendamento[]
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@index([tutorId])
+  @@map("pets")
+}
+
+model Servico {
+  id        String  @id @default(uuid()) @db.Uuid
+  nome      String  @unique
+  descricao String
+  preco     Decimal @db.Decimal(10, 2)
+
+  agendamentos Agendamento[]
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("servicos")
+}
+
+model Produto {
+  id        String  @id @default(uuid()) @db.Uuid
+  nome      String  @unique
+  descricao String
+  preco     Decimal @db.Decimal(10, 2)
+  estoque   Int     @default(0)
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("produtos")
+}
+
+model Agendamento {
+  id       String   @id @default(uuid()) @db.Uuid
+  dataHora DateTime @map("data_hora")
+
+  /// Um dos rótulos de STATUS do front: Agendado, Confirmado,
+  /// Em atendimento, Concluído ou Cancelado.
+  status String @default("Agendado")
+
+  tutorId String @map("tutor_id") @db.Uuid
+  tutor   Tutor  @relation(fields: [tutorId], references: [id], onDelete: Restrict)
+
+  petId String @map("pet_id") @db.Uuid
+  pet   Pet    @relation(fields: [petId], references: [id], onDelete: Restrict)
+
+  servicoId String  @map("servico_id") @db.Uuid
+  servico   Servico @relation(fields: [servicoId], references: [id], onDelete: Restrict)
+
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@index([tutorId])
+  @@index([petId])
+  @@index([servicoId])
+  @@index([dataHora])
+  @@map("agendamentos")
 }

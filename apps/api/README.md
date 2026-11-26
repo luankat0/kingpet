@@ -1,98 +1,120 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# King Pet — API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST do King Pet (back-office de petshop), em NestJS + Prisma + PostgreSQL.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+A equipe do petshop faz login e administra tutores, pets, serviços, produtos e
+agendamentos. É essa API que o front end (`apps/web`) consome: os nomes dos
+campos e os rótulos de status são os mesmos da tela, sem tradução no meio.
 
-## Description
+## Como rodar
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+O passo a passo completo está no [README da raiz](../../README.md). Em resumo,
+a partir da raiz do monorepo:
 
 ```bash
-$ npm install
+docker compose up -d --build
+npm run db:seed -w api
 ```
 
-## Compile and run the project
+A API fica em `http://localhost:3000` e o Swagger em
+`http://localhost:3000/docs`.
 
-```bash
-# development
-$ npm run start
+## Scripts úteis (`-w api`)
 
-# watch mode
-$ npm run start:dev
+| Script        | O que faz                                        |
+| ------------- | ------------------------------------------------ |
+| `start:dev`   | API em watch mode                                |
+| `build`       | Compila para `dist/`                             |
+| `test`        | Testes unitários (Jest)                          |
+| `db:generate` | Gera o Prisma Client em `src/generated/prisma`   |
+| `db:migrate`  | Cria/aplica migration em desenvolvimento         |
+| `db:deploy`   | Aplica as migrations existentes                  |
+| `db:seed`     | Cria a conta da equipe e o catálogo de serviços  |
+| `db:reset`    | Recria o banco do zero                           |
 
-# production mode
-$ npm run start:prod
+## Modelo de dados
+
+```
+Usuario (login da equipe)
+
+Tutor 1—N Pet
+  └─ 1—N Agendamento N—1 Servico
+Pet   1—N Agendamento
+
+Produto (catálogo próprio, sem vínculo)
 ```
 
-## Run tests
+- **Usuario** — conta de acesso de quem trabalha no petshop: nome, e-mail,
+  hash da senha e `funcao` (texto exibido no perfil).
+- **Tutor** — cliente do petshop: nome, contato, telefone e endereço. **Não
+  tem login**; é um cadastro feito pela equipe.
+- **Pet** — pertence a um tutor: nome, espécie, raça e sexo (textos livres,
+  iguais aos selects da tela).
+- **Servico** — nome (único), descrição e preço.
+- **Produto** — nome (único), descrição, preço e estoque.
+- **Agendamento** — liga tutor, pet e serviço em uma data/hora, com `status`
+  em um dos rótulos: `Agendado`, `Confirmado`, `Em atendimento`, `Concluído`
+  ou `Cancelado`.
 
-```bash
-# unit tests
-$ npm run test
+O preço é `DECIMAL(10,2)` no banco e sai como **número** no JSON, que é o que
+o front espera.
 
-# e2e tests
-$ npm run test:e2e
+## Endpoints
 
-# test coverage
-$ npm run test:cov
-```
+Todas as rotas exigem `Authorization: Bearer <access_token>`, menos
+`POST /auth/login`, `POST /auth/register`, `GET /` e `GET /health`.
 
-## Deployment
+### Status
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+| Método | Rota      | Descrição                       |
+| ------ | --------- | ------------------------------- |
+| GET    | `/`       | Identificação da API            |
+| GET    | `/health` | Checa API + conexão com o banco |
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Autenticação (`/auth`)
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+| Método | Rota             | Descrição                                   |
+| ------ | ---------------- | ------------------------------------------- |
+| POST   | `/auth/register` | Cria conta da equipe (nome, e-mail, senha)  |
+| POST   | `/auth/login`    | Devolve `access_token` + dados do usuário   |
+| GET    | `/auth/me`       | Usuário autenticado (`id, nome, email, funcao`) |
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Cadastros
 
-## Resources
+Os cinco cadastros seguem o mesmo desenho REST:
 
-Check out a few resources that may come in handy when working with NestJS:
+| Método | Rota             | Descrição               |
+| ------ | ---------------- | ----------------------- |
+| GET    | `/<recurso>`     | Lista tudo              |
+| GET    | `/<recurso>/:id` | Consulta um registro    |
+| POST   | `/<recurso>`     | Cadastra                |
+| PATCH  | `/<recurso>/:id` | Atualiza (campos parciais) |
+| DELETE | `/<recurso>/:id` | Exclui (204)            |
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Recursos: `/tutores`, `/pets`, `/servicos`, `/produtos`, `/agendamentos`.
+`GET /pets` aceita `?tutorId=<uuid>` para filtrar os pets de um tutor.
 
-## Support
+## Regras garantidas no servidor
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Eram validações só do navegador; agora o servidor também recusa:
 
-## Stay in touch
+- **Tutor** — telefone com 10 ou 11 dígitos; o texto é guardado como veio da
+  tela, com máscara.
+- **Pet** — o tutor precisa existir. Trocar o tutor de um pet que já tem
+  agendamentos é recusado (409), senão o histórico ficaria apontando para o
+  tutor antigo.
+- **Serviço / Produto** — nome único (409 em duplicidade) e preço ≥ 0; o
+  estoque do produto é inteiro ≥ 0.
+- **Agendamento** — tutor e serviço precisam existir, e **o pet precisa ser
+  do tutor informado**; a data precisa ser válida e o status precisa ser um
+  dos cinco rótulos. Na atualização o trio tutor/pet/serviço é revalidado
+  inteiro, porque trocar só uma das pontas também quebra o vínculo.
+- **Exclusões** — tutor com pets ou agendamentos é recusado (409); pet ou
+  serviço com agendamentos também. As mensagens são as mesmas que a tela já
+  mostrava.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Variáveis de ambiente
 
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Veja `.env.example`. O seed aceita `SEED_USUARIO_NOME`, `SEED_USUARIO_EMAIL`,
+`SEED_USUARIO_SENHA` e `SEED_USUARIO_FUNCAO` para criar a conta inicial com
+outros valores.
