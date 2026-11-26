@@ -1,3 +1,9 @@
+// O PrismaService carrega @nestjs/config, que é ESM e o Jest não consegue
+// transformar. Como o teste só precisa de um dublê, trocamos o módulo inteiro.
+jest.mock('./prisma/prisma.service', () => ({
+    PrismaService: class PrismaServiceMock {},
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AppController } from './app.controller';
