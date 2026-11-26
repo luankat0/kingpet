@@ -50,12 +50,12 @@
                 </button>
             }
         </div>
-        <p-table [value]="doDia()" [tableStyle]="{ 'min-width': '29rem' }">
+        <p-table [value]="doDia()">
             <ng-template #header>
                 <tr>
                     <th>Horário</th>
                     <th>Pet e tutor</th>
-                    <th>Serviço</th>
+                    <th class="servico-separado">Serviço</th>
                     <th>Status</th>
                 </tr>
             </ng-template>
@@ -65,8 +65,9 @@
                     <td>
                         <a class="registro" [routerLink]="['/agendamentos', a.id]">{{ a.pet }}</a>
                         <small>{{ a.tutor }}</small>
+                        <small class="servico-no-pet">{{ a.servico }}</small>
                     </td>
-                    <td>{{ a.servico }}</td>
+                    <td class="servico-separado">{{ a.servico }}</td>
                     <td>
                         <p-tag [value]="a.status" [severity]="tom(a.status)" />
                     </td>

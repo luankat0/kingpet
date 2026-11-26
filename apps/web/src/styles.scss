@@ -913,3 +913,18 @@ dt {
         max-width: calc(100vw - 0.6rem);
     }
 }
+
+.agenda-dia .p-datatable td .servico-no-pet {
+    display: none;
+}
+@media (max-width: 650px) {
+    .agenda-dia .servico-separado {
+        display: none;
+    }
+    .agenda-dia .p-datatable td .servico-no-pet {
+        display: block;
+    }
+    .agenda-dia .p-datatable :is(td, th) {
+        padding-inline: 0.6rem;
+    }
+}
