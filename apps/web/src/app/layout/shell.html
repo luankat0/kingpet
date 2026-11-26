@@ -1,0 +1,99 @@
+<a class="salto" href="#conteudo">Pular para o conteúdo</a>
+<ng-template #navegacao>
+    <div class="lateral-conteudo">
+        <a
+            routerLink="/dashboard"
+            class="logo-link"
+            aria-label="KingPet, dashboard"
+            (click)="mobile = false"
+        >
+            <kp-marca />
+        </a>
+        <nav aria-label="Menu principal">
+            @for (g of grupos; track g.titulo) {
+                <section class="nav-grupo">
+                    <h2>{{ g.titulo }}</h2>
+                    @for (i of g.itens; track i.rota) {
+                        <a
+                            [routerLink]="['/', i.rota]"
+                            routerLinkActive="ativo"
+                            ariaCurrentWhenActive="page"
+                            [title]="i.nome"
+                            (click)="mobile = false"
+                        >
+                            <i aria-hidden="true" [class]="'pi pi-' + i.icone"></i>
+                            <span>{{ i.nome }}</span>
+                        </a>
+                    }
+                    @if (g.titulo === 'Conta') {
+                        <button type="button" title="Sair" (click)="sair()">
+                            <i aria-hidden="true" class="pi pi-sign-out"></i>
+                            <span>Sair</span>
+                        </button>
+                    }
+                </section>
+            }
+        </nav>
+        <div class="rodape-nav">
+            <span class="ponto"></span>
+            <span>Ambiente local</span>
+        </div>
+    </div>
+</ng-template>
+<div class="shell" [class.compacto]="recolhido()">
+    <aside class="lateral"><ng-container *ngTemplateOutlet="navegacao" /></aside>
+
+    <div class="principal">
+        <header class="topbar">
+            <button class="icone" (click)="alternarMenu()" aria-label="Alternar menu">
+                <i aria-hidden="true" class="pi pi-bars"></i>
+            </button>
+            <span class="separador"></span>
+            <p-breadcrumb [model]="migalhas()" ariaLabel="Caminho da página" />
+            <div class="top-direita">
+                <button
+                    class="icone"
+                    (click)="tema.alternar()"
+                    [attr.aria-label]="tema.escuro() ? 'Ativar tema claro' : 'Ativar tema escuro'"
+                >
+                    <i aria-hidden="true" [class]="tema.escuro() ? 'pi pi-sun' : 'pi pi-moon'"></i>
+                </button>
+                <span class="separador"></span>
+                <button
+                    class="conta"
+                    (click)="menu.toggle($event)"
+                    aria-label="Menu de Alex Martins"
+                    aria-haspopup="menu"
+                >
+                    <span class="avatar">AM</span>
+                    <span class="conta-nome">{{ auth.usuario.nome }}</span>
+                    <i aria-hidden="true" class="pi pi-angle-down"></i>
+                </button>
+                <p-menu #menu [popup]="true" [model]="usuarioMenu" appendTo="body" />
+            </div>
+        </header>
+        <main id="conteudo" tabindex="-1" class="conteudo">
+            @if (repo.carregando()) {
+                <p-progressSpinner ariaLabel="Carregando registros" />
+            } @else if (repo.erro()) {
+                <p-message severity="error">{{ repo.erro() }}</p-message>
+                <p-button label="Tentar novamente" (onClick)="repo.carregar()" />
+            } @else {
+                <router-outlet />
+            }
+        </main>
+    </div>
+</div>
+
+<p-toast position="bottom-right" />
+<p-confirmDialog
+    [style]="{ width: '28rem', maxWidth: '94vw' }"
+    acceptLabel="Confirmar"
+    rejectLabel="Voltar"
+    defaultFocus="reject"
+    [closable]="true"
+/>
+
+<p-drawer [(visible)]="mobile" header="Navegação" styleClass="drawer-nav">
+    <ng-container *ngTemplateOutlet="navegacao" />
+</p-drawer>

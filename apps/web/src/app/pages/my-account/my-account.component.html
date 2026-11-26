@@ -1,51 +1,23 @@
-<main class="register-page">
-    <section class="register-card">
-        <header class="register-header">
-            <div class="brand">
-                <span class="brand-icon">K</span>
-                <span>King Pet</span>
-            </div>
-
-            <h1>Minha conta</h1>
-            <p>Informações do seu cadastro no King Pet.</p>
-        </header>
-
-        @if (authService.usuario(); as usuario) {
-            <div class="account-details">
-                <div class="detail">
-                    <span>Nome completo</span>
-                    <strong>
-                        {{ usuario.tutor?.nome ?? 'Não informado' }}
-                    </strong>
-                </div>
-
-                <div class="detail">
-                    <span>E-mail</span>
-                    <strong>{{ usuario.email }}</strong>
-                </div>
-
-                <div class="detail">
-                    <span>Telefone</span>
-                    <strong>
-                        {{ usuario.tutor?.telefone ?? 'Não informado' }}
-                    </strong>
-                </div>
-
-                <div class="detail">
-                    <span>Endereço</span>
-                    <strong>
-                        {{ usuario.tutor?.endereco ?? 'Não informado' }}
-                    </strong>
-                </div>
-            </div>
-        }
-
-        <p-button
-            label="Sair da conta"
-            severity="secondary"
-            [outlined]="true"
-            [fluid]="true"
-            (onClick)="sair()"
-        />
-    </section>
-</main>
+<kp-cabecalho titulo="Meu perfil" descricao="Identificação da sessão atual." />
+<section class="painel ficha">
+    <div class="identidade">
+        <span class="avatar grande">AM</span>
+        <div>
+            <h2>{{ authService.usuario.nome }}</h2>
+            <p>{{ authService.usuario.funcao }}</p>
+        </div>
+    </div>
+    <dl>
+        <dt>E-mail</dt>
+        <dd>{{ authService.usuario.email }}</dd>
+        <dt>Tipo de acesso</dt>
+        <dd>Sessão demonstrativa local</dd>
+    </dl>
+    <p-button
+        label="Sair da conta" ariaLabel="Sair da conta"
+        severity="secondary"
+        [outlined]="true"
+        icon="pi pi-sign-out"
+        (onClick)="sair()"
+    />
+</section>

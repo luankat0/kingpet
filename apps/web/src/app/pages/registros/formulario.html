@@ -1,0 +1,139 @@
+@if (id && !registro) {
+    <kp-ausente
+        titulo="Registro não encontrado"
+        [voltar]="'/' + tipo"
+        [destino]="meta.nome.toLowerCase()"
+    />
+} @else {
+    <kp-cabecalho
+        [titulo]="id ? 'Editar ' + meta.singular.toLowerCase() : meta.novo"
+        descricao="Os campos com asterisco são obrigatórios."
+    />
+    <form class="painel ficha" [formGroup]="form" (ngSubmit)="salvar()" novalidate>
+        <h2>{{ tipo === 'agendamentos' ? 'Detalhes do agendamento' : 'Dados de cadastro' }}</h2>
+        <div class="grade-form">
+            @for (k of campos; track k) {
+                <div class="field" [class.largo]="k === 'descricao' || k === 'endereco'">
+                    <label [for]="k">
+                        {{ labels[k] }}
+                        <span aria-hidden="true">*</span>
+                    </label>
+                    @switch (k) {
+                        @case ('telefone') {
+                            <input
+                                pInputText
+                                type="tel"
+                                autocomplete="tel"
+                                [id]="k"
+                                [formControlName]="k"
+                                placeholder="(81) 99999-9999"
+                                (input)="telefone($event)"
+                            />
+                        }
+                        @case ('descricao') {
+                            <textarea pTextarea [id]="k" [formControlName]="k" rows="3"></textarea>
+                        }
+                        @case ('preco') {
+                            <p-inputnumber
+                                [inputId]="k"
+                                [formControlName]="k"
+                                mode="currency"
+                                currency="BRL"
+                                locale="pt-BR"
+                                [min]="0"
+                                [fluid]="true"
+                            />
+                        }
+                        @case ('estoque') {
+                            <p-inputnumber
+                                [inputId]="k"
+                                [formControlName]="k"
+                                locale="pt-BR"
+                                [min]="0"
+                                [maxFractionDigits]="0"
+                                [fluid]="true"
+                            />
+                        }
+                        @case ('dataHora') {
+                            <p-datepicker
+                                [inputId]="k"
+                                [formControlName]="k"
+                                [showTime]="true"
+                                hourFormat="24"
+                                [showIcon]="true"
+                                [readonlyInput]="true"
+                                [fluid]="true"
+                                appendTo="body"
+                            />
+                        }
+                        @default {
+                            @if (
+                                k === 'especie' ||
+                                k === 'sexo' ||
+                                k === 'tutorId' ||
+                                k === 'petId' ||
+                                k === 'servicoId' ||
+                                k === 'status'
+                            ) {
+                                <p-select
+                                    [inputId]="k"
+                                    [formControlName]="k"
+                                    [options]="opcoes()[k]"
+                                    optionLabel="nome"
+                                    optionValue="id"
+                                    [filter]="true"
+                                    [placeholder]="
+                                        k === 'petId' && !tutor()
+                                            ? 'Escolha o tutor primeiro'
+                                            : 'Selecione'
+                                    "
+                                    (onChange)="k === 'tutorId' && trocarTutor()"
+                                    [fluid]="true"
+                                    appendTo="body"
+                                />
+                                @if (k === 'servicoId' && precoServico()) {
+                                    <small>Preço do serviço · {{ precoServico() }}</small>
+                                }
+                            } @else {
+                                <input pInputText [id]="k" [formControlName]="k" />
+                            }
+                        }
+                    }
+                    @if (form.controls[k].invalid && form.controls[k].touched) {
+                        <small class="erro" role="alert">
+                            {{
+                                k === 'telefone'
+                                    ? 'Informe um telefone com DDD.'
+                                    : k === 'estoque'
+                                      ? 'Informe uma
+                quantidade inteira a partir de zero.'
+                                      : 'Preencha este campo com um valor
+                válido.'
+                            }}
+                        </small>
+                    }
+                </div>
+            }
+        </div>
+        @if (erro()) {
+            <p-message severity="error">{{ erro() }}</p-message>
+        }
+        <footer class="form-acoes">
+            <a
+                pButton
+                severity="secondary"
+                [outlined]="true"
+                [routerLink]="id ? ['/', tipo, id] : ['/', tipo]"
+            >
+                Cancelar
+            </a>
+            <p-button
+                type="submit"
+                icon="pi pi-check"
+                label="Salvar" ariaLabel="Salvar"
+                [loading]="enviando()"
+                [disabled]="enviando()"
+            />
+        </footer>
+    </form>
+}

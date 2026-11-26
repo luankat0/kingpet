@@ -1,0 +1,151 @@
+<kp-cabecalho titulo="Visão geral" [descricao]="tituloData">
+    <a pButton routerLink="/agendamentos/novo">
+        <i aria-hidden="true" class="pi pi-plus"></i>
+        Novo agendamento
+    </a>
+    <button
+        class="icone contorno"
+        aria-label="Outros cadastros rápidos"
+        title="Outros cadastros rápidos"
+        (click)="atalhos.toggle($event)"
+    >
+        <i aria-hidden="true" class="pi pi-ellipsis-h"></i>
+    </button>
+    <p-menu #atalhos [popup]="true" [model]="acoes" appendTo="body" />
+</kp-cabecalho>
+<div class="metricas">
+    @for (m of metricas(); track m.tipo; let i = $index) {
+        <a class="metrica" [routerLink]="['/', m.tipo]">
+            <span [class]="'metrica-icone tinta-' + i"><i aria-hidden="true" [class]="'pi pi-' + m.icone"></i></span>
+            <span class="metrica-texto">
+                <small>{{ m.nome }}</small>
+                <strong>{{ m.valor }}</strong>
+            </span>
+            <i aria-hidden="true" class="pi pi-arrow-up-right"></i>
+        </a>
+    }
+</div>
+<div class="dashboard-grid">
+    <section class="painel agenda-dia">
+        <header class="painel-header">
+            <div class="titulo-icone">
+                <i aria-hidden="true" class="pi pi-calendar"></i>
+                <h2>Agenda de atendimentos</h2>
+            </div>
+            <a class="link" routerLink="/agendamentos">
+                Ver agenda
+                <i aria-hidden="true" class="pi pi-arrow-right"></i>
+            </a>
+        </header>
+        <div class="semana" role="group" aria-label="Dia da agenda">
+            @for (d of semana; track d.data; let i = $index) {
+                <button
+                    [class.selecionado]="selecao() === i"
+                    [attr.aria-pressed]="selecao() === i"
+                    (click)="selecao.set(i)"
+                    [attr.aria-label]="dia(d.data)"
+                >
+                    <small>{{ i === 0 ? 'Hoje' : d.semana }}</small>
+                    <strong>{{ d.dia }}</strong>
+                </button>
+            }
+        </div>
+        <p-table [value]="doDia()" [tableStyle]="{ 'min-width': '29rem' }">
+            <ng-template #header>
+                <tr>
+                    <th>Horário</th>
+                    <th>Pet e tutor</th>
+                    <th>Serviço</th>
+                    <th>Status</th>
+                </tr>
+            </ng-template>
+            <ng-template #body let-a>
+                <tr>
+                    <td class="hora">{{ hora(a.dataHora) }}</td>
+                    <td>
+                        <a class="registro" [routerLink]="['/agendamentos', a.id]">{{ a.pet }}</a>
+                        <small>{{ a.tutor }}</small>
+                    </td>
+                    <td>{{ a.servico }}</td>
+                    <td>
+                        <p-tag [value]="a.status" [severity]="tom(a.status)" />
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="4" class="vazio">Nenhum atendimento para este dia.</td>
+                </tr>
+            </ng-template>
+        </p-table>
+        <footer class="painel-rodape">
+            {{ doDia().length }} atendimento(s) em {{ dia(semana[selecao()].data) }}
+        </footer>
+    </section>
+    <div class="dash-col">
+        <section class="painel">
+            <header class="painel-header">
+                <div class="titulo-icone">
+                    <i aria-hidden="true" class="pi pi-chart-pie"></i>
+                    <h2>Status da agenda</h2>
+                </div>
+            </header>
+            <div class="distrib">
+                <div class="barra-status" aria-hidden="true">
+                    @for (s of distribuicao(); track s.s) {
+                        @if (s.n) {
+                            <span [class]="'cor-' + s.i" [style.flex-grow]="s.n"></span>
+                        }
+                    }
+                </div>
+                @for (s of distribuicao(); track s.s) {
+                    <div class="legenda">
+                        <i aria-hidden="true" [class]="'cor-' + s.i"></i>
+                        <span>{{ s.s }}</span>
+                        <strong>{{ s.n }}</strong>
+                    </div>
+                }
+            </div>
+        </section>
+        <section class="painel">
+            <header class="painel-header">
+                <div class="titulo-icone">
+                    <i aria-hidden="true" class="pi pi-box"></i>
+                    <h2>Atenção ao estoque</h2>
+                </div>
+            </header>
+            @for (p of estoque(); track p.id) {
+                <a class="linha-link" [routerLink]="['/produtos', p.id]">
+                    <div>
+                        <strong>{{ p.nome }}</strong>
+                        <small>{{ disponibilidade(p.estoque) }}</small>
+                    </div>
+                    <span class="unidades">{{ p.estoque }} un.</span>
+                </a>
+            } @empty {
+                <p class="vazio">Todos os produtos estão abastecidos.</p>
+            }
+        </section>
+    </div>
+    <section class="painel proximos">
+        <header class="painel-header">
+            <div class="titulo-icone">
+                <i aria-hidden="true" class="pi pi-clock"></i>
+                <h2>Próximos agendamentos</h2>
+            </div>
+        </header>
+        @for (a of proximos(); track a.id) {
+            <a class="linha-link" [routerLink]="['/agendamentos', a.id]">
+                <div>
+                    <strong>{{ a['pet'] }} · {{ a['servico'] }}</strong>
+                    <small>{{ a['tutor'] }}</small>
+                </div>
+                <span>
+                    {{ dia(a['dataHora'].toString()) }} · {{ hora(a['dataHora'].toString()) }}
+                </span>
+            </a>
+        } @empty {
+            <p class="vazio">Nenhum agendamento futuro.</p>
+        }
+    </section>
+</div>
