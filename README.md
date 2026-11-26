@@ -67,7 +67,7 @@ npm run dev:web
 
 O site abre em <http://localhost:4200>. Ele conversa com a API pelo caminho
 `/api`, que o servidor de desenvolvimento do Angular encaminha para
-`localhost:3000` (veja `apps/web/proxy.conf.json`) — por isso a API precisa
+`localhost:3000` (veja `apps/web/proxy.conf.mjs`) — por isso a API precisa
 estar de pé antes de você usar as telas.
 
 ### Comandos do dia a dia no Docker
@@ -233,13 +233,14 @@ pare o serviço local, ou publique o container em outra porta:
 $env:DB_PORT = "5433"; $env:API_PORT = "3001"; docker compose up -d
 ```
 
-Se mudar a `API_PORT`, ajuste também o `target` em `apps/web/proxy.conf.json`.
+A mesma `API_PORT` vale para o `npm run dev:web`: o proxy do front lê essa
+variável, então defina-a nos dois terminais.
 Para descobrir quem está na porta: `Get-NetTCPConnection -LocalPort 5432`.
 
 **O front mostra "Não foi possível conectar à API"**
 Confira se a API está de pé (`docker compose ps` ou `curl http://localhost:3000/health`).
 O front chama `/api` e o proxy do Angular repassa para `localhost:3000`; se você
-mudou a porta da API, ajuste `apps/web/proxy.conf.json`.
+mudou a porta da API, ajuste `apps/web/proxy.conf.mjs`.
 
 **A tela de login recusa o acesso**
 Rode o seed (`npm run db:seed -w api` ou `docker compose exec api npm run db:seed`):
