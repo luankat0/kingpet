@@ -1,0 +1,21 @@
+# Dependências e artefatos: a imagem instala e compila do zero.
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+**/*.tsbuildinfo
+
+# Segredos: as variáveis vêm do compose.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Nada disso serve para a imagem.
+.git/
+.gitignore
+**/.vscode/
+**/.idea/
+**/*.md
+!apps/api/README.md
+**/*.log
+apps/api/src/generated/

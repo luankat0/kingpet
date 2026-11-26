@@ -1,0 +1,208 @@
+# King Pet
+
+Sistema de petshop: cadastro de tutores, pets, catálogo de serviços e
+agendamentos.
+
+Monorepo com npm workspaces:
+
+| Pasta      | O que é           | Stack                                  |
+| ---------- | ----------------- | -------------------------------------- |
+| `apps/web` | Front end         | Angular 21 + PrimeNG                   |
+| `apps/api` | Back end (API)    | NestJS 11 + Prisma 7 + PostgreSQL 17   |
+
+## Pré-requisitos
+
+- **Node.js 22+** e **npm 11+** (`node -v`, `npm -v`)
+- **Docker Desktop** (traz o `docker compose`)
+- **Git**
+
+## Jeito mais rápido: banco e API no Docker
+
+Tudo a partir da **raiz do projeto**.
+
+```powershell
+docker compose up -d --build
+```
+
+Isso sobe:
+
+| Serviço | Onde atende             | O que faz                                  |
+| ------- | ----------------------- | ------------------------------------------ |
+| `db`    | `localhost:5432`        | PostgreSQL com os dados em um volume       |
+| `api`   | `localhost:3000`        | API; aplica as migrations sozinha ao subir |
+
+Popule o catálogo de serviços (uma vez):
+
+```powershell
+docker compose exec api npm run db:seed
+```
+
+Confira se está no ar:
+
+```powershell
+curl http://localhost:3000/health
+```
+
+A documentação das rotas (Swagger) fica em <http://localhost:3000/docs>.
+
+Agora instale as dependências e suba o front end:
+
+```powershell
+npm install
+```
+
+```powershell
+npm run dev:web
+```
+
+O site abre em <http://localhost:4200>.
+
+### Comandos do dia a dia no Docker
+
+```powershell
+docker compose logs -f api
+```
+
+```powershell
+docker compose restart api
+```
+
+```powershell
+docker compose down
+```
+
+Para apagar também o banco (zera tudo):
+
+```powershell
+docker compose down -v
+```
+
+## Jeito alternativo: só o banco no Docker, API e front na máquina
+
+Útil para desenvolver no back end com hot reload.
+
+1. Suba apenas o banco:
+
+```powershell
+docker compose up -d db
+```
+
+2. Instale as dependências (na raiz):
+
+```powershell
+npm install
+```
+
+3. Crie o `.env` da API a partir do exemplo:
+
+```powershell
+Copy-Item apps/api/.env.example apps/api/.env
+```
+
+Abra `apps/api/.env` e preencha `JWT_SECRET` com qualquer texto secreto.
+
+4. Gere o Prisma Client, aplique as migrations e popule os serviços:
+
+```powershell
+npm run db:generate -w api
+```
+
+```powershell
+npm run db:deploy -w api
+```
+
+```powershell
+npm run db:seed -w api
+```
+
+5. Suba a API e, em outro terminal, o front:
+
+```powershell
+npm run dev:api
+```
+
+```powershell
+npm run dev:web
+```
+
+## Scripts da raiz
+
+| Comando             | O que faz                                  |
+| ------------------- | ------------------------------------------ |
+| `npm run dev:api`   | API em watch mode (`localhost:3000`)       |
+| `npm run dev:web`   | Front em watch mode (`localhost:4200`)     |
+| `npm run build:api` | Compila a API em `apps/api/dist`           |
+| `npm run build:web` | Compila o front                            |
+
+Scripts do banco (rodam dentro do workspace da API, com `-w api`):
+`db:generate`, `db:migrate`, `db:deploy`, `db:seed`, `db:reset`.
+
+Testes:
+
+```powershell
+npm test -w api
+```
+
+```powershell
+npm test -w web
+```
+
+## Variáveis de ambiente da API
+
+Ficam em `apps/api/.env` (veja `apps/api/.env.example`). No Docker elas vêm
+do `compose.yaml`.
+
+| Variável       | Para que serve                                  |
+| -------------- | ----------------------------------------------- |
+| `DATABASE_URL` | Conexão com o PostgreSQL                        |
+| `JWT_SECRET`   | Chave que assina os tokens de login             |
+| `PORT`         | Porta da API (padrão `3000`)                    |
+| `WEB_ORIGIN`   | Origem liberada no CORS (padrão `:4200`)        |
+
+Para trocar o segredo do JWT no Docker, defina `JWT_SECRET` antes de subir:
+
+```powershell
+$env:JWT_SECRET = "um-segredo-bem-grande"; docker compose up -d
+```
+
+## Rotas da API
+
+O detalhamento está em [apps/api/README.md](apps/api/README.md) e no Swagger
+(<http://localhost:3000/docs>). Em resumo:
+
+| Prefixo         | O que cobre                                        |
+| --------------- | -------------------------------------------------- |
+| `/auth`         | Cadastro, login e dados do usuário logado          |
+| `/tutores`      | Perfil do tutor autenticado                        |
+| `/pets`         | CRUD dos pets do tutor                             |
+| `/servicos`     | Catálogo do petshop (leitura pública)              |
+| `/agendamentos` | Agendar, remarcar, cancelar e concluir atendimentos |
+| `/health`       | Status da API e do banco                           |
+
+## Organização do trabalho
+
+| Branch                 | Responsável | Escopo    |
+| ---------------------- | ----------- | --------- |
+| `main`                 | —           | integração |
+| `Feature/BackEnd-Levi` | Levi        | API       |
+| `levi-branch`          | Levi        | base      |
+
+## Problemas comuns
+
+**`docker compose up` reclama que a porta 5432 ou 3000 está em uso**
+Já existe um Postgres ou uma API rodando na máquina. Pare o serviço local ou
+troque a porta publicada no `compose.yaml`.
+
+**A API sobe mas o front mostra "Não foi possível conectar à API"**
+Confira se o container está de pé (`docker compose ps`) e se o front está em
+`http://localhost:4200` — é a origem liberada no CORS por padrão.
+
+**`npm install` falha no `bcrypt` no Windows**
+O `bcrypt` compila código nativo e não gosta de caminhos com acento nem de
+pastas sincronizadas pelo OneDrive. Rode `npm rebuild bcrypt` ou clone o
+projeto em um caminho simples, por exemplo `C:\dev\kingpet`. No Docker isso
+não acontece.
+
+**Mudei o `schema.prisma` e a API não vê o campo novo**
+Rode `npm run db:migrate -w api` (cria a migration) e
+`npm run db:generate -w api` (regera o client).
