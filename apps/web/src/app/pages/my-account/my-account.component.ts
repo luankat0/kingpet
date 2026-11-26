@@ -1,3 +1,4 @@
+import { Cabecalho } from '../../shared/cabecalho';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
@@ -8,7 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 @Component({
     selector: 'app-my-account',
     standalone: true,
-    imports: [ButtonModule],
+    imports: [ButtonModule, Cabecalho],
     templateUrl: './my-account.component.html',
     styleUrl: './my-account.component.scss',
 })

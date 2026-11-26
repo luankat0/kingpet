@@ -1,18 +1,84 @@
-@use '../tutor-register/tutor-register.component.scss';
-
-.account-link {
-    margin: 24px 0 0;
-    text-align: center;
-    font-size: 0.9rem;
-    color: #64748b;
-
-    a {
-        color: #1e40af;
-        font-weight: 600;
-        text-decoration: none;
-
-        &:hover {
-            text-decoration: underline;
-        }
+:host {
+    display: block;
+}
+.login {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: minmax(300px, 0.94fr) 1.2fr;
+}
+.login > aside {
+    background: var(--nav);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(2rem, 5vw, 5rem);
+    position: relative;
+    overflow: hidden;
+}
+.login > aside::after {
+    content: '';
+    position: absolute;
+    width: 32rem;
+    height: 32rem;
+    border: 1px solid #ffffff22;
+    border-radius: 50%;
+    right: -15rem;
+    top: 15%;
+    box-shadow:
+        0 0 0 4rem #ffffff06,
+        0 0 0 8rem #ffffff06,
+        0 0 0 12rem #ffffff06;
+}
+.login aside strong {
+    font-size: clamp(2.4rem, 5vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: -0.06em;
+    display: block;
+    max-width: 7em;
+    font-weight: 600;
+}
+.login aside small {
+    color: #c0d6cd;
+    display: block;
+    margin-bottom: 1rem;
+}
+.login-content {
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+}
+.login-card {
+    width: min(100%, 24rem);
+}
+.login-card form {
+    display: grid;
+    gap: 1.3rem;
+    margin: 2rem 0;
+}
+.login-card h1 {
+    margin-bottom: 0.5rem;
+}
+.demo {
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.7;
+}
+@media (max-width: 700px) {
+    .login {
+        display: flex;
+        flex-direction: column;
+    }
+    .login > aside {
+        padding: 1.5rem;
+    }
+    .login aside > div,
+    .login aside > small {
+        display: none;
+    }
+    .login-content {
+        flex: 1;
     }
 }

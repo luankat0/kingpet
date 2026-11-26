@@ -1,10 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-
-@Component({
-    selector: 'app-root',
-    imports: [RouterOutlet],
-    templateUrl: './app.html',
-    styleUrl: './app.scss',
-})
-export class App {}
+import { Tema } from './core/theme';
+@Component({ selector: 'app-root', imports: [RouterOutlet], templateUrl: './app.html' })
+export class App {
+    readonly tema = inject(Tema);
+}

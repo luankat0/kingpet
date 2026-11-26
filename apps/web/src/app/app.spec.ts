@@ -1,27 +1,26 @@
 import { TestBed } from '@angular/core/testing';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { provideRouter } from '@angular/router';
-
 import { App } from './app';
-import { routes } from './app.routes';
 
 describe('App', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [App],
-            providers: [provideRouter(routes)],
+            providers: [MessageService, ConfirmationService, provideRouter([])],
         }).compileComponents();
     });
 
-    it('deve criar o componente raiz', () => {
+    it('should create the app', () => {
         const fixture = TestBed.createComponent(App);
-
-        expect(fixture.componentInstance).toBeTruthy();
+        const app = fixture.componentInstance;
+        expect(app).toBeTruthy();
     });
 
-    it('deve renderizar o router-outlet', () => {
+    it('should render the route outlet', async () => {
         const fixture = TestBed.createComponent(App);
-        const elemento = fixture.nativeElement as HTMLElement;
-
-        expect(elemento.querySelector('router-outlet')).toBeTruthy();
+        await fixture.whenStable();
+        const compiled = fixture.nativeElement as HTMLElement;
+        expect(compiled.querySelector('router-outlet')).toBeTruthy();
     });
 });

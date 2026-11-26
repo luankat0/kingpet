@@ -1,75 +1,79 @@
-<main class="register-page">
-    <section class="register-card">
-        <header class="register-header">
-            <div class="brand">
-                <span class="brand-icon">K</span>
-                <span>King Pet</span>
-            </div>
+<main class="login">
+    <aside>
+        <kp-marca />
+        <div>
+            <small>KingPet • Gestão de petshop</small>
+            <strong>Central de operações</strong>
+        </div>
+        <small>Ambiente demonstrativo local</small>
+    </aside>
+    <section class="login-content">
+        <div class="login-card">
+            <h1>Acessar o KingPet</h1>
+            <p class="muted">Entre com as credenciais de demonstração.</p>
+            @if (erro()) {
+                <p-message severity="error" class="status-message" role="alert">
+                    {{ erro() }}
+                </p-message>
+            }
 
-            <h1>Entrar na sua conta</h1>
+            <form [formGroup]="form" (ngSubmit)="entrar()" novalidate>
+                <div class="field">
+                    <label for="email">E-mail</label>
 
-            <p>Acesse sua conta para visualizar seus dados no King Pet.</p>
-        </header>
+                    <input
+                        pInputText
+                        id="email"
+                        type="email"
+                        formControlName="email"
+                        placeholder="seuemail@exemplo.com"
+                        autocomplete="email"
+                        [invalid]="campoInvalido('email')"
+                    />
 
-        @if (erro()) {
-            <p-message severity="error" class="status-message" role="alert">
-                {{ erro() }}
-            </p-message>
-        }
+                    @if (campoInvalido('email')) {
+                        <p-message severity="error" variant="simple" size="small">
+                            Informe um e-mail válido.
+                        </p-message>
+                    }
+                </div>
 
-        <form [formGroup]="form" (ngSubmit)="entrar()" novalidate>
-            <div class="field">
-                <label for="email">E-mail</label>
+                <div class="field">
+                    <label for="senha">Senha</label>
 
-                <input
-                    pInputText
-                    id="email"
-                    type="email"
-                    formControlName="email"
-                    placeholder="seuemail@exemplo.com"
-                    autocomplete="email"
-                    [invalid]="campoInvalido('email')"
-                />
+                    <p-password
+                        inputId="senha"
+                        formControlName="senha"
+                        [feedback]="false"
+                        [toggleMask]="true"
+                        [fluid]="true"
+                        [invalid]="campoInvalido('senha')"
+                        autocomplete="current-password"
+                    />
 
-                @if (campoInvalido('email')) {
-                    <p-message severity="error" variant="simple" size="small">
-                        Informe um e-mail válido.
-                    </p-message>
-                }
-            </div>
+                    @if (campoInvalido('senha')) {
+                        <p-message severity="error" variant="simple" size="small">
+                            Informe sua senha.
+                        </p-message>
+                    }
+                </div>
 
-            <div class="field">
-                <label for="senha">Senha</label>
-
-                <p-password
-                    inputId="senha"
-                    formControlName="senha"
-                    [feedback]="false"
-                    [toggleMask]="true"
+                <p-button
+                    type="submit"
+                    label="Entrar"
+                    [loading]="enviando()"
+                    [disabled]="enviando()"
                     [fluid]="true"
-                    [invalid]="campoInvalido('senha')"
-                    autocomplete="current-password"
                 />
+            </form>
 
-                @if (campoInvalido('senha')) {
-                    <p-message severity="error" variant="simple" size="small">
-                        Informe sua senha.
-                    </p-message>
-                }
+            <div class="demo">
+                <strong>Acesso demonstrativo</strong>
+                <br />
+                E-mail · equipe&#64;kingpet.test
+                <br />
+                Senha · KingPet2026
             </div>
-
-            <p-button
-                type="submit"
-                label="Entrar"
-                [loading]="enviando()"
-                [disabled]="enviando()"
-                [fluid]="true"
-            />
-        </form>
-
-        <p class="account-link">
-            Ainda não possui uma conta?
-            <a routerLink="/cadastro">Cadastre-se</a>
-        </p>
+        </div>
     </section>
 </main>

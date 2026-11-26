@@ -1,0 +1,106 @@
+@if (row(); as r) {
+    <kp-cabecalho [titulo]="titulo(tipo, r)" [descricao]="meta.singular">
+        <a pButton [routerLink]="['/', tipo, id(), 'editar']">
+            <i aria-hidden="true" class="pi pi-pencil"></i>
+            Editar
+        </a>
+    </kp-cabecalho>
+    <div class="detalhes">
+        <section class="painel ficha">
+            <h2>Dados do registro</h2>
+            <dl>
+                @for (c of campos; track c) {
+                    <dt>{{ labels[c] }}</dt>
+                    <dd>
+                        @if (vinculos[c]) {
+                            <a [routerLink]="['/', vinculos[c], r[c + 'Id']]">{{ r[c] }}</a>
+                        } @else if (c === 'situacao' || c === 'status') {
+                            <p-tag [value]="r[c].toString()" [severity]="tom(r[c])" />
+                        } @else {
+                            {{ exibir(c, r[c]) }}
+                        }
+                    </dd>
+                }
+            </dl>
+            @if (tipo === 'agendamentos') {
+                <div class="field">
+                    <label for="mudar-status">Alterar status</label>
+                    <p-select
+                        inputId="mudar-status"
+                        #seletorStatus="ngModel"
+                        [options]="status"
+                        [ngModel]="r['status']"
+                        (onChange)="alterar($event.value, seletorStatus)"
+                        [disabled]="ocupado()"
+                        appendTo="body"
+                    />
+                </div>
+            }
+            <footer class="form-acoes">
+                <a class="link" [routerLink]="['/', tipo]">Voltar à lista</a>
+                <button class="link perigo" (click)="excluir()">Excluir registro</button>
+            </footer>
+        </section>
+        @if (tipo === 'tutores' || tipo === 'pets' || tipo === 'servicos') {
+            <div class="vinculados">
+                @if (tipo === 'tutores') {
+                    <section class="painel">
+                        <header class="painel-header">
+                            <h2>Pets vinculados</h2>
+                            <a
+                                class="link"
+                                routerLink="/pets/novo"
+                                [queryParams]="{ tutorId: id() }"
+                            >
+                                Cadastrar pet
+                            </a>
+                        </header>
+                        @for (p of pets(); track p.id) {
+                            <a class="linha-link" [routerLink]="['/pets', p.id]">
+                                <strong>{{ p.nome }}</strong>
+                                <span>{{ p.especie }}</span>
+                            </a>
+                        } @empty {
+                            <p class="vazio">Nenhum pet vinculado.</p>
+                        }
+                    </section>
+                }
+                <section class="painel">
+                    <header class="painel-header">
+                        <h2>Agendamentos</h2>
+                        <a
+                            class="link"
+                            routerLink="/agendamentos/novo"
+                            [queryParams]="
+                                tipo === 'pets'
+                                    ? { petId: id() }
+                                    : tipo === 'tutores'
+                                      ? { tutorId: id() }
+                                      : { servicoId: id() }
+                            "
+                        >
+                            Agendar
+                        </a>
+                    </header>
+                    @for (a of agenda(); track a.id) {
+                        <a class="linha-link" [routerLink]="['/agendamentos', a.id]">
+                            <div>
+                                <strong>{{ a['pet'] }} · {{ a['servico'] }}</strong>
+                                <small>{{ exibir('dataHora', a['dataHora']) }}</small>
+                            </div>
+                            <p-tag [value]="a['status'].toString()" [severity]="tom(a['status'])" />
+                        </a>
+                    } @empty {
+                        <p class="vazio">Nenhum agendamento vinculado.</p>
+                    }
+                </section>
+            </div>
+        }
+    </div>
+} @else {
+    <kp-ausente
+        titulo="Registro não encontrado"
+        [voltar]="'/' + tipo"
+        [destino]="meta.nome.toLowerCase()"
+    />
+}

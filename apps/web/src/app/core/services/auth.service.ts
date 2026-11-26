@@ -1,86 +1,38 @@
-import { inject, Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
+import { ambiente } from '../config';
+import { Sessao, Usuario } from '../models';
 
-export interface CadastrarTutorRequest {
-    nome: string;
-    email: string;
-    telefone: string;
-    endereco?: string;
-    senha: string;
-}
-
-export interface CadastrarTutorResponse {
-    id: string;
-    email: string;
-    tutor: {
-        id: string;
-        nome: string;
-        telefone: string;
-        endereco: string | null;
-    };
-}
-
-export interface LoginRequest {
-    email: string;
-    senha: string;
-}
-
-export interface LoginResponse {
-    access_token: string;
-    token_type: string;
-    expires_in: number;
-}
-
-export interface UsuarioAutenticado {
-    id: string;
-    email: string;
-    tutor: {
-        id: string;
-        nome: string;
-        telefone: string;
-        endereco: string | null;
-    } | null;
-}
-
-@Injectable({
-    providedIn: 'root',
-})
+export const USUARIO: Usuario = {
+    id: 'demo',
+    nome: 'Alex Martins',
+    email: 'equipe@kingpet.test',
+    funcao: 'Administração',
+};
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-    private readonly http = inject(HttpClient);
-    private readonly apiUrl = 'http://localhost:3000/auth';
-
-    private readonly tokenState = signal<string | null>(null);
-
-    readonly usuario = signal<UsuarioAutenticado | null>(null);
-
-    cadastrarTutor(dados: CadastrarTutorRequest) {
-        return this.http.post<CadastrarTutorResponse>(`${this.apiUrl}/register`, dados);
+    private restaurar(): Sessao | null {
+        try {
+            const s = JSON.parse(sessionStorage.getItem(ambiente.sessao) ?? 'null');
+            return s?.usuarioId === USUARIO.id && Number.isFinite(Date.parse(s.inicio)) ? s : null;
+        } catch {
+            return null;
+        }
     }
-
-    login(dados: LoginRequest) {
-        return this.http.post<LoginResponse>(`${this.apiUrl}/login`, dados).pipe(
-            tap((resposta) => {
-                this.tokenState.set(resposta.access_token);
-                this.usuario.set(null);
-            }),
-        );
+    readonly sessao = signal(this.restaurar());
+    readonly usuario = USUARIO;
+    async login(email: string, senha: string) {
+        if (email.trim().toLowerCase() !== USUARIO.email || senha !== 'KingPet2026')
+            throw Error('E-mail ou senha incorretos.');
+        const s: Sessao = { usuarioId: USUARIO.id, inicio: new Date().toISOString() };
+        try {
+            sessionStorage.setItem(ambiente.sessao, JSON.stringify(s));
+        } catch {
+            throw Error('Habilite o armazenamento do navegador para iniciar a sessão.');
+        }
+        this.sessao.set(s);
     }
-
-    obterToken(): string | null {
-        return this.tokenState();
-    }
-
-    me() {
-        return this.http.get<UsuarioAutenticado>(`${this.apiUrl}/me`).pipe(
-            tap((usuario) => {
-                this.usuario.set(usuario);
-            }),
-        );
-    }
-
-    sair(): void {
-        this.tokenState.set(null);
-        this.usuario.set(null);
+    sair() {
+        sessionStorage.removeItem(ambiente.sessao);
+        this.sessao.set(null);
     }
 }

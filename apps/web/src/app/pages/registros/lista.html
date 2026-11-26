@@ -1,0 +1,139 @@
+<kp-cabecalho [titulo]="meta.nome" [descricao]="meta.descricao">
+    <a pButton [routerLink]="['/', tipo, 'novo']">
+        <i aria-hidden="true" class="pi pi-plus"></i>
+        {{ meta.novo }}
+    </a>
+</kp-cabecalho>
+<section class="painel tabela-painel">
+    <div class="filtros">
+        <label class="buscador">
+            <i aria-hidden="true" class="pi pi-search"></i>
+            <input
+                pInputText
+                [placeholder]="'Pesquisar ' + meta.nome.toLowerCase()"
+                [attr.aria-label]="'Pesquisar ' + meta.nome"
+                [ngModel]="busca()"
+                (ngModelChange)="pagina = 0; busca.set($event)"
+            />
+        </label>
+        @for (c of campos; track c) {
+            <p-select
+                [ariaLabel]="labels[c]"
+                [placeholder]="labels[c]"
+                [options]="opcoes()[c]"
+                optionLabel="nome"
+                optionValue="id"
+                [showClear]="true"
+                [filter]="true"
+                [ngModel]="filtros()[c]"
+                (ngModelChange)="filtrar(c, $event)"
+                appendTo="body"
+            />
+        }
+        @if (tipo === 'agendamentos') {
+            <p-datepicker
+                ariaLabel="Data inicial"
+                placeholder="Data inicial"
+                [showIcon]="true"
+                [readonlyInput]="true"
+                [ngModel]="inicio()"
+                [maxDate]="fim() ?? undefined"
+                (ngModelChange)="pagina = 0; inicio.set($event)"
+                appendTo="body"
+            />
+            <p-datepicker
+                ariaLabel="Data final"
+                placeholder="Data final"
+                [showIcon]="true"
+                [readonlyInput]="true"
+                [ngModel]="fim()"
+                [minDate]="inicio() ?? undefined"
+                (ngModelChange)="pagina = 0; fim.set($event)"
+                appendTo="body"
+            />
+        }
+        @if (filtrosAtivos()) {
+            <button class="link" (click)="limpar()">Limpar filtros</button>
+        }
+    </div>
+    <div class="contagem" aria-live="polite">{{ linhas().length }} registro(s)</div>
+    <p-table
+        [value]="linhas()"
+        [paginator]="true"
+        [rows]="10"
+        [(first)]="pagina"
+        [rowsPerPageOptions]="[5, 10, 20]"
+        [sortField]="tipo === 'agendamentos' ? 'dataHora' : 'nome'"
+        [sortOrder]="1"
+        [tableStyle]="{ 'min-width': '43rem' }"
+    >
+        <ng-template #header>
+            <tr>
+                @for (c of meta.colunas; track c) {
+                    <th [pSortableColumn]="c">
+                        {{ labels[c] }}
+                        <p-sortIcon [field]="c" />
+                    </th>
+                }
+                <th>Ações</th>
+            </tr>
+        </ng-template>
+        <ng-template #body let-r>
+            <tr>
+                @for (c of meta.colunas; track c; let primeiro = $first) {
+                    <td>
+                        @if (primeiro) {
+                            <a class="registro" [routerLink]="['/', tipo, r.id]">
+                                {{ exibir(c, r[c]) }}
+                            </a>
+                        } @else if (c === 'status' || c === 'situacao') {
+                            <p-tag [value]="r[c]" [severity]="tom(r[c])" />
+                        } @else {
+                            {{ exibir(c, r[c]) }}
+                        }
+                    </td>
+                }
+                <td>
+                    <div class="acoes-linha">
+                        <a
+                            class="icone"
+                            [routerLink]="['/', tipo, r.id]"
+                            [attr.aria-label]="'Visualizar ' + titulo(tipo, r)"
+                            title="Visualizar"
+                        >
+                            <i aria-hidden="true" class="pi pi-eye"></i>
+                        </a>
+                        <a
+                            class="icone"
+                            [routerLink]="['/', tipo, r.id, 'editar']"
+                            [attr.aria-label]="'Editar ' + titulo(tipo, r)"
+                            title="Editar"
+                        >
+                            <i aria-hidden="true" class="pi pi-pencil"></i>
+                        </a>
+                        <button
+                            class="icone perigo"
+                            [attr.aria-label]="'Excluir ' + titulo(tipo, r)"
+                            title="Excluir"
+                            (click)="excluir(r)"
+                        >
+                            <i aria-hidden="true" class="pi pi-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+            <tr>
+                <td [attr.colspan]="meta.colunas.length + 1" class="vazio">
+                    {{
+                        repo.dados()[tipo].length
+                            ? 'Nenhum resultado para os filtros
+                    aplicados.'
+                            : 'Nenhum registro cadastrado.'
+                    }}
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</section>
